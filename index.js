@@ -11,7 +11,7 @@ const { analyzeSong } = require("./songAnalyzer")
 //import analyzeSong from "./songAnalyzer.js"; //= require("songAnalyzer.js")
 //const { analyzeSong } = require("./songAnalyzer.js")
 
-app.get("/", (req, res) => res.sendFile(path.join(__dirname+'/indextail.html')));
+app.get("/", (req, res) => res.sendFile(path.join(__dirname+'/index.html')));
 app.get("/files", function(req, res) { 
     files = fs.readdirSync('TestInputs');
     res.send(files)
