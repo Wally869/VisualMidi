@@ -15,6 +15,23 @@ Can also toggle to include Drums track or not
 
 Notes: it's a WIP. Chords have been filtered out
 
+### Installation
+
+Install python dependencies (pip for mido, git clone and pip -e for MidiStructurer)
+then
+
+```
+git clone https://github.com/Wally869/VisualMidi
+cd VisualMidi
+npm install
+
+// start electron app
+npm start
+
+// Can also start in webonly mode
+npm run startwebonly 
+```
+
 ### Dependencies
 
 Python:
@@ -24,6 +41,7 @@ Python:
 Javascript:
 - Express
 - Chart.js
+- Electron
 
 ### Plot Colors
 
