@@ -1,6 +1,6 @@
 const express = require("express");
-const app = express();
-app.use(express.static('jsfiles'))
+const srv = express();
+srv.use(express.static('jsfiles'))
 const port = 3000;
 
 const path = require('path');
@@ -11,17 +11,27 @@ const { analyzeSong } = require("./songAnalyzer")
 //import analyzeSong from "./songAnalyzer.js"; //= require("songAnalyzer.js")
 //const { analyzeSong } = require("./songAnalyzer.js")
 
-app.get("/", (req, res) => res.sendFile(path.join(__dirname+'/index.html')));
-app.get("/files", function(req, res) { 
+srv.get("/", (req, res) => res.sendFile(path.join(__dirname+'/index.html')));
+srv.get("/files", function(req, res) { 
     files = fs.readdirSync('TestInputs');
     res.send(files)
 });
-app.get("/analyze/:filename", async function(req, res) { 
+srv.get("/analyze/:filename", async function(req, res) { 
     var filename = req.params.filename;
     console.log("Analyzing: " + filename);
     specs = await analyzeSong(filename);
     res.send(specs);
 });
-app.listen(port, () =>
-  console.log(`Example app listening at http://localhost:${port}`)
+
+if (process.argv.length > 2) {
+  srv.listen(port, () =>
+  console.log(`srv listening at http://localhost:${port}`)
+  );
+}
+/*
+srv.listen(port, () =>
+  console.log(`srv listening at http://localhost:${port}`)
 );
+*/
+
+module.exports = {srv};

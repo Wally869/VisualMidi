@@ -1,14 +1,16 @@
 {
   "name": "midivisuals",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "electron .",
+    "startWebOnly": "node index.js"
   },
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "electron": "^8.2.5",
     "express": "^4.17.1",
     "fs": "0.0.1-security"
   }
