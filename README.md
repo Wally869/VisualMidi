@@ -64,6 +64,8 @@ class ColorPool {
 }
 ```
 
-### Improvements
+### To Do
 
-wip
+- Color Palette instead of random pick
+- Change plotting library, tooltip not working for heatmap, and custom recipe for heatmap has issues
+- Maybe use brython instead of relying on user python install
