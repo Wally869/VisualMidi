@@ -32,3 +32,41 @@ def MessageTimeToAbsolute(track: mido.MidiTrack):
         time += msg.time
         msg.time = time
     return outTrack
+
+"""
+class DefaultDict(object):
+    def __init__(self, defaultValue = 0):
+        self.DefaultValue = 0
+        self.dict = {}
+
+    def __get__(self, key):
+        if key not in self.dict.keys():
+            self.dict[key] = 0
+        return self.dict[key]
+
+    def __set__(self,)
+"""
+
+class LayeredCounter(dict):
+    def __init__(self, defaultValue: str = ""):
+        self.DefaultValue = defaultValue
+    def __missing__(self, key):
+        if self.DefaultValue == "int":
+            self[key] = 0
+        else:
+            self[key] = LayeredCounter("int")
+        return self[key]
+    def AddListElements(self, elems):
+        for elem in elems:
+            self[elem] += 1
+
+class Counter(dict):
+    def __missing__(self, key):
+        self[key] = 0
+        return self[key]
+    def AddListElements(self, elems):
+        for elem in elems:
+            self[elem] += 1
+
+
+

@@ -1,11 +1,9 @@
 from __future__ import annotations
 
 from MidiStructurer.Components import *
-#from Plotting import *
-
 
 import mido
-from utils import FindExclusionThreshold, GetSelectedMessageTypes, MessageTimeToAbsolute
+from utils import FindExclusionThreshold, GetSelectedMessageTypes, MessageTimeToAbsolute, Counter, LayeredCounter
 from copy import deepcopy
 
 from numpy import array
@@ -17,44 +15,103 @@ fp = "TestInputs/DQVIII_Reminiscence.mid"
 fp2 = "TestInputs/ffxseymourblackmages.mid"
 
 
+"""
+What output?
+
+Features of interest per track:
+- Note_on visualiser (time and frequency) aka frequency points before
+- DeltaTimes
+- Standalone Intervals
+- Successive Intervals
+- Is Percussions track
+
+- Chords, later?
+
+
+
+=> Get track instrument? maybe later I guess
+
+
+=> color palettes will need to be set in app
+=> for Standalone intervals, maybe different for perfect, imperfect consonances and dissonances?
+=> or Perfect, Minor, Major, Augmented, Diminished, Doubly Augmented, Doubly Diminished
+=> in which case, get a list [interval.ShortStr(), interval.Quality]
+
+[
+    {
+        Times: [float],
+        Frequencies: [float],
+        DeltaTimes: [float],
+        IntervalsStandalone: [interval.ShortStr()],  // for color, lookup can be defined somewhere else
+        IntervalsSuccession: {str: { str: int}}
+        IsDrumsTrack: bool
+        
+    }
+
+]
+
+also want to be able to seperate per track from concatenated
+
+=> organize app like this: (each line is a row of elements)
+name, file select, load button
+button per channel, button global, button disable drums (deactivated or invisible when per channel?)
+control buttons (in a column like before, but with a select track above other buttons), chart
+
+
+maybe change plotting backend?
+use selected color palette. Maybe write to file if not enough colors?
+
+"""
+
+
 def main(filepath: str = fp):
     # load file
     f = mido.MidiFile(filepath)
     preprocessedTracks = PreprocessTracks(f.tracks)
 
     # Outliers in term of delta time will need to be excluded
-    deltaTimes = []
+    dts = []
     for track in preprocessedTracks:
         for i in range(1, len(track)):
-            deltaTimes.append(track[i].time - track[i - 1].time)
+            dts.append(track[i].time - track[i - 1].time)
 
-    deltaTimes = array(deltaTimes)
-    exclThreshold = FindExclusionThreshold(arr=deltaTimes[deltaTimes > 0], cutoffMultiplier=5)
+    dts = array(dts)
+    exclThreshold = FindExclusionThreshold(arr=dts[dts > 0], cutoffMultiplier=5)
+
+    """
+    dts.sort()
+    dts = [int(elem) for elem in dts]
+    deltaTimes = Counter()
+    deltaTimes.AddListElements(dts)
+    """
 
     specs = []
     for track in preprocessedTracks:
-        percussionsTrack = IsPercussionTrack(track)
-        intervals, deltaTimes, freqs = ExtractDataTrack(track, exclThreshold)
-        freqs = HandleFrequencyPoints(freqs)
+        isDrumsTrack = IsDrumsTrack(track)
+        times, frequencies, deltaTimes, intervalsStandalone, intervalsSuccession = ExtractDataTrack(track, exclThreshold)
+        # sort intervals
         currSpecs = {
-            "Intervals": [interval.ShortStr() for interval in intervals],
+            "Times": times,
+            "Frequencies": frequencies,
             "DeltaTimes": deltaTimes,
-            "FrequencyPoints": freqs,
-            "IsPercussions": percussionsTrack
+            "IntervalsStandalone": intervalsStandalone,
+            "IntervalsSuccession": intervalsSuccession,
+            "IsDrumsTrack": isDrumsTrack
         }
         specs.append(currSpecs)
 
+        """
+        Times: [float],
+        Frequencies: [float],
+        DeltaTimes: {int: int},
+        IntervalsStandalone: {str: int},  // for color, lookup can be defined somewhere else
+        IntervalsSuccession: {str: { str: int}}
+        IsDrumsTrack: bool
+        specs.append(currSpecs)
+        """
+
     return specs
 
-# couldn't I just zip?
-def HandleFrequencyPoints(points: List[Tuple[float, float]]) -> Tuple[List[float], List[float]]:
-    xs = []
-    ys = []
-    for elem in points:
-        xs.append(elem[0])
-        ys.append(elem[1])
-
-    return xs, ys
 
 def PreprocessTracks(tracks: List[mido.MidiTrack]) -> List[List[mido.Message]]:
     # switch to absolute time
@@ -67,10 +124,13 @@ def PreprocessTracks(tracks: List[mido.MidiTrack]) -> List[List[mido.Message]]:
     return filteredTracks
 
 
+
 def ExtractDataTrack(track: List[mido.Message], exclusionThreshold: float) -> Tuple(List[Interval], List[int]):
-    intervals = []
+    standaloneIntervals = []
     deltaTimes = []
-    freqs = []
+
+    times = [track[0].time]
+    frequencies = [CreateNoteFromHeight(track[0].note).Frequency]
 
     for idMsg in range(1, len(track)):
         dt = track[idMsg].time - track[idMsg - 1].time
@@ -80,22 +140,34 @@ def ExtractDataTrack(track: List[mido.Message], exclusionThreshold: float) -> Tu
             n0 = CreateNoteFromHeight(track[idMsg].note)
             n1 = CreateNoteFromHeight(track[idMsg - 1].note)
 
-            #print(n0.ComputeFrequency())
-            #print(track[idMsg].time)
-            freqs.append((track[idMsg].time, n0.ComputeFrequency()))
+            times.append(track[idMsg].time)
+            frequencies.append(n0.Frequency)
+            
+            currInterval = Interval.FromNotes(n0, n1)
+            standaloneIntervals.append(
+                currInterval
+            )
 
-            if n0 > n1:
-                n0, n1 = n1, n0
 
-            # catch compound interval errors
-            try:
-                intervals.append(
-                    Interval.FromNotes(n0, n1)
-                )
-            except:
-                pass
+    tempSuccessionIntervals = [
+        (standaloneIntervals[idInterval - 1].ShortStr(), standaloneIntervals[idInterval].ShortStr())
+        for idInterval in range(1, len(standaloneIntervals))
+    ]
 
-    return intervals, deltaTimes, freqs
+    successionIntervals = LayeredCounter()
+    for elem in tempSuccessionIntervals:
+        successionIntervals[elem[0]][elem[1]] += 1
+    #print(successionIntervals)
+
+    standaloneIntervals.sort()
+
+    counterStandaloneIntervals = Counter()
+    counterStandaloneIntervals.AddListElements([interval.ShortStr() for interval in standaloneIntervals])
+
+    outDeltatimes = Counter()
+    outDeltatimes.AddListElements(deltaTimes)
+
+    return times, frequencies, outDeltatimes, counterStandaloneIntervals, successionIntervals
 
 
 # problem here, if for example 2 hands piano in one channel
@@ -117,16 +189,8 @@ def ExcludeChords(track: List[mido.Message]) -> List[mido.Message]:
     return outTrack
 
 
-def ExcludePercussionTrack(tracks: List[mido.MidiTrack]) -> List[mido.MidiTrack]:
-    outTracks = []
-    for t in tracks:
-        if not IsPercussionTrack(t):
-            outTracks.append(t)
-    return outTracks
-
-
-def IsPercussionTrack(track: mido.MidiTrack) -> bool:
-    # percussions are on track 9 (mido is 0 indexed)
+def IsDrumsTrack(track: mido.MidiTrack) -> bool:
+    # drums are on track 9 (mido is 0 indexed)
     for message in track:
         # check if message has a "channel" attribute
         if "channel" in message.__dict__.keys():
@@ -135,23 +199,9 @@ def IsPercussionTrack(track: mido.MidiTrack) -> bool:
     return False
 
 
-
-
-# error with compound intervals
-# ignore it for now
-def GetIntervals(notes: List[Note]) -> List[Interval]:
-    # will be problem if notes at same time
-    intervals = []
-    for idNote in range(1, len(notes)):
-        n0 = notes[idNote - 1]
-        n1 = notes[idNote]
-
-        try:
-            Interval.FromNotes(n0, n1)
-        except:
-            # print("Compound interval detected. Ignored")
-            pass
-    return intervals
+def HandleFrequencyPoints(points: List[Tuple[float, float]]) -> Tuple[List[float], List[float]]:
+    # Unzipping tuples for use in plots.js
+    return list(zip(*points))
 
 
 if __name__ == "__main__":
@@ -160,3 +210,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     print(json.dumps(main("TestInputs/" + args.filename)))
+

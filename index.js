@@ -7,7 +7,7 @@ const path = require('path');
 const fs = require("fs");
 var files = []
 
-const { analyzeSong } = require("./songAnalyzer")
+const { analyzeSong } = require("./songAnalyzer.js")
 //import analyzeSong from "./songAnalyzer.js"; //= require("songAnalyzer.js")
 //const { analyzeSong } = require("./songAnalyzer.js")
 
@@ -20,6 +20,7 @@ srv.get("/analyze/:filename", async function(req, res) {
     var filename = req.params.filename;
     console.log("Analyzing: " + filename);
     specs = await analyzeSong(filename);
+    console.log(specs)
     res.send(specs);
 });
 
