@@ -130,15 +130,15 @@ def ExtractDataTrack(track: List[mido.Message], exclusionThreshold: float) -> Tu
     deltaTimes = []
 
     times = [track[0].time]
-    frequencies = [CreateNoteFromHeight(track[0].note).Frequency]
+    frequencies = [Note.FromHeight(track[0].note).Frequency]
 
     for idMsg in range(1, len(track)):
         dt = track[idMsg].time - track[idMsg - 1].time
         if dt < exclusionThreshold:
             deltaTimes.append(dt)
 
-            n0 = CreateNoteFromHeight(track[idMsg].note)
-            n1 = CreateNoteFromHeight(track[idMsg - 1].note)
+            n0 = Note.FromHeight(track[idMsg].note)
+            n1 = Note.FromHeight(track[idMsg - 1].note)
 
             times.append(track[idMsg].time)
             frequencies.append(n0.Frequency)
