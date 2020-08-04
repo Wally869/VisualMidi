@@ -36,7 +36,7 @@ npm run startwebonly
 
 Python:
 - mido
-- MidiStructurer (my repo: https://github.com/Wally869/MidiStructurer)
+- MusiStrata (my repo: https://github.com/Wally869/MusiStrata)
 
 Javascript:
 - Express
