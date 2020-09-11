@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from MidiStructurer.Components import *
+from MusiStrata.Components import *
 
 import mido
 from utils import FindExclusionThreshold, GetSelectedMessageTypes, MessageTimeToAbsolute, Counter, LayeredCounter
